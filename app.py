@@ -1,50 +1,21 @@
-import pandas as pd
-import matplotlib.pyplot as plt
 import streamlit as st
+import pandas as pd
 
-st.set_page_config(page_title="Admissions Explorer", page_icon="🎓")
-st.title("🎓 Graduate Admissions Explorer")
-st.write("Explore how test scores and CGPA relate to the chance of admission.")
+df = pd.read_csv('cafe_sales.csv')
 
-
-@st.cache_data
-def load_data():
-    df = pd.read_csv("Admission_Predict_Ver1.1.csv")
-    df.columns = df.columns.str.strip()  # some column names end with a space
-    return df
+st.title('☕ Qahwa Corner Sales Dashboard')
 
 
-df = load_data()
+branches = df['branch'].unique()
+selected_branch = st.selectbox('Select Branch', branches)
 
-# Sidebar filters
-st.sidebar.header("Filters")
-min_cgpa = st.sidebar.slider("Minimum CGPA", 6.5, 10.0, 9.0, 0.1)
-research = st.sidebar.selectbox("Research experience", ["All", "Yes", "No"])
+filtered_df = df[df['branch'] == selected_branch]
 
-view = df[df["CGPA"] >= min_cgpa]
-if research != "All":
-    view = view[view["Research"] == (1 if research == "Yes" else 0)]
 
-# Key numbers
-c1, c2, c3, c4 = st.columns(4)
-c1.metric("Students", len(view))
-if len(view) > 0:
-    c2.metric("Average CGPA", f"{view['CGPA'].mean():.2f}")
-    c3.metric("Average chance", f"{view['Chance of Admit'].mean():.0%}")
-    c4.metric("Average GRE", f"{view['GRE Score'].mean():.1f}")
-else:
-    st.warning("No students match these filters. Lower the minimum CGPA.")
+total_rev = filtered_df['total_sar'].sum()
+st.metric(label="Total Revenue (SAR)", value=f"{total_rev:,.2f} SAR")
 
-# Chart
-fig, ax = plt.subplots()
-ax.scatter(view["GRE Score"], view["Chance of Admit"], alpha=0.6)
-ax.set_xlabel("GRE Score")
-ax.set_ylabel("Chance of Admit")
-ax.set_title("GRE Score vs Chance of Admit")
-st.pyplot(fig)
-st.subheader("CGPA distribution")
-fig2, ax2 = plt.subplots()
-ax2.hist(view["CGPA"], bins=15)
-ax2.set_xlabel("CGPA")
-ax2.set_ylabel("Number of students")
-st.pyplot(fig2)
+
+st.subheader('Revenue by Product')
+product_revenue = filtered_df.groupby('product')['total_sar'].sum()
+st.bar_chart(product_revenue)
